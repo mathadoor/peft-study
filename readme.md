@@ -57,19 +57,18 @@ quantization levels. We consider float32 as the base. The quantization levels ar
 accumulation data type is kept as float32. The matrix sizes are varied from 10 x 10, 100 x 100, 1000 x 1000, 10000 x 10000.
 Each matrix is sampled from a normal distribution with mean 0 and standard deviation 1.
 
-Now let us see how quantized matrix multiplication works. Suppose we want to perform the operation $Y = A \time B$. Here,
+Now let us see how quantized matrix multiplication works. Suppose we want to perform the operation $Y = A \times B$. Here,
 $Y \in \mathbb{R}^{m \times n}$, $A \in \mathbb{R}^{m \times k}$, and $B \in \mathbb{R}^{k \times n}$. Each element in 
-Y is computed as follows: $y_{ij} = \sum_{l=1}^{k} a_{il} \times b_{lj}$. As such, we will need to do k floating point 
+Y is computed as follows: $y_{ij} = \sum_{l=1} a_{il} \times b_{lj}$. As such, we will need to do k floating point 
 multiplications and additions to compute each element in Y. Thus, we will need to perform $m \times n \times k$ floating
 point multiplications and additions to compute the entire matrix Y. We know that floating point operations are expensive.
 Thus, we can reduce the cost of computation by quantizing the matrices A and B. Let us see how this is done.
 
-Let's replace each element in the equation by its quantized value. 
-$y_{ij} = \sum_{l=1}^{k} \alpha_a (a_{q, il} - \beta_a) \times \alpha_b (b_{q, lj} - \beta_b) $.
-$y_{ij} = \alpha_a \alpha_b \sum_{l=1}^{k} (a_{q, il} - \beta_a) \times (b_{q, lj} - \beta_b) $.
-$y_{ij} = \alpha_a \alpha_b (\sum_{l=1}^{k} a_{q, il} \times b_{q, lj} - \beta_a \sum_{l=1}^{k} b_{q, lj} - \beta_b \sum_{l=1}^{k} a_{q, il} + k * \beta_a \beta_b) $.
-Now, let us substitute the expression for the $y_{ij}$ in terms of quantized values. 
-$y_{q, ij} = \frac{beta_y}{alpha_y} + \frac{\alpha_a \alpha_b}{alpha_b} (y_{q, ij} - \beta_a \sum_{l=1}^{k} b_{q, lj} - \beta_b \sum_{l=1}^{k} a_{q, il} + k * \beta_a \beta_b) $.
+Let's replace each element in the equation by its quantized value.  
+$y_{ij} = \sum_{l=1} \alpha_a (a_{q, il} - \beta_a) \times \alpha_b (b_{q, lj} - \beta_b) $.  
+$y_{ij} = \alpha_a \alpha_b \sum_{l=1} (a_{q, il} - \beta_a) \times (b_{q, lj} - \beta_b) $.  
+$y_{ij} = \alpha_a \alpha_b (\sum_{l=1} a_{q, il} \times b_{q, lj} - \beta_a \sum_{l=1} b_{q, lj} - \beta_b \sum_{l=1} a_{q, il} + k * \beta_a \beta_b) $.  
+Now, let us substitute the expression for the $y_{ij}$ in terms of quantized values.  
+$y_{q, ij} = \frac{\beta_y}{\alpha_y} + \frac{\alpha_a \alpha_b}{\alpha_y} (y_{q, ij} - \beta_a \sum_{l=1} b_{q, lj} - \beta_b \sum_{l=1} a_{q, il} + k * \beta_a \beta_b) $.  
 ### Linear Regression
-### Computer Vision Tasks
 ### Language Modeling Tasks
