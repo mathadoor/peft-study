@@ -31,9 +31,8 @@ understand how to quantize the model. In the next section, we will discuss vario
 Let us first understand how quantization is applied to a model. The process can be seen as that of finding a linear mapping 
 from a larger set of discrete numbers to a smaller set. These numbers correspond to the weights or activations in some 
 part of the model. Suppose the source set of numbers lie in the range $x \in [a, b]$ and the target set of numbers lie in the
-range $y \in [c, d]$. The linear mapping is $y = \alpha x + \beta$. Here, $\alpha$ is the scale factor and $\beta$ is the
-zero point. Since the ranges are mapped, $a$ is mapped to $c$ and $b$ is mapped to $d$. Thus, the scale factor is given 
-by $\alpha = \frac{d - c}{b - a}$ and the zero point is given by $\beta = c - \alpha a$.  
+range $x_q \in [c, d]$. The linear mapping is $x = \alpha (x_q - \beta$). Here, $\alpha$ is the scale factor and $\beta$ is the
+zero point. 
 
 Now, let us see how we can categorize quantization methods. The first way is to categorize them based on the
 data type of the target number. The target number can be either an integer or a floating point number. In addition, we 
@@ -56,7 +55,21 @@ The first experiment is to understand the effect of quantization on matrix multi
 done using the PyTorch library. Both the accuracy and the time taken to multiply two matrices are recorded for different
 quantization levels. We consider float32 as the base. The quantization levels are FP16, FP8, bfloat16, int8, and int4. The
 accumulation data type is kept as float32. The matrix sizes are varied from 10 x 10, 100 x 100, 1000 x 1000, 10000 x 10000.
-Each matrix is sampled from a normal distribution with mean 0 and standard deviation 1.  
+Each matrix is sampled from a normal distribution with mean 0 and standard deviation 1.
+
+Now let us see how quantized matrix multiplication works. Suppose we want to perform the operation $Y = A \time B$. Here,
+$Y \in \mathbb{R}^{m \times n}$, $A \in \mathbb{R}^{m \times k}$, and $B \in \mathbb{R}^{k \times n}$. Each element in 
+Y is computed as follows: $y_{ij} = \sum_{l=1}^{k} a_{il} \times b_{lj}$. As such, we will need to do k floating point 
+multiplications and additions to compute each element in Y. Thus, we will need to perform $m \times n \times k$ floating
+point multiplications and additions to compute the entire matrix Y. We know that floating point operations are expensive.
+Thus, we can reduce the cost of computation by quantizing the matrices A and B. Let us see how this is done.
+
+Let's replace each element in the equation by its quantized value. 
+$y_{ij} = \sum_{l=1}^{k} \alpha_a (a_{q, il} - \beta_a) \times \alpha_b (b_{q, lj} - \beta_b) $.
+$y_{ij} = \alpha_a \alpha_b \sum_{l=1}^{k} (a_{q, il} - \beta_a) \times (b_{q, lj} - \beta_b) $.
+$y_{ij} = \alpha_a \alpha_b (\sum_{l=1}^{k} a_{q, il} \times b_{q, lj} - \beta_a \sum_{l=1}^{k} b_{q, lj} - \beta_b \sum_{l=1}^{k} a_{q, il} + k * \beta_a \beta_b) $.
+Now, let us substitute the expression for the $y_{ij}$ in terms of quantized values. 
+$y_{q, ij} = \frac{beta_y}{alpha_y} + \frac{\alpha_a \alpha_b}{alpha_b} (y_{q, ij} - \beta_a \sum_{l=1}^{k} b_{q, lj} - \beta_b \sum_{l=1}^{k} a_{q, il} + k * \beta_a \beta_b) $.
 ### Linear Regression
 ### Computer Vision Tasks
 ### Language Modeling Tasks
