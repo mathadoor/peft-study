@@ -2,10 +2,10 @@ import torch
 from torch import float32, int8, int16, int32
 
 bits = 8
-alpha_q, beta_q = -2**(bits-1), 2**(bits-1)-1
+alpha_q, beta_q = -2 ** (bits - 1), 2 ** (bits - 1) - 1
+
 
 def quantization(x, s, z):
-
     x_q = torch.round(1 / s * x + z)
     x_q = torch.clamp(x_q, alpha_q, beta_q)
     # x_q = np.round(1 / s * x + z, decimals=0)
@@ -15,14 +15,12 @@ def quantization(x, s, z):
 
 
 def quantization_int8(x, s, z):
-
     x_q = quantization(x, s, z)
     x_q = x_q.to(int8)
     return x_q
 
 
 def dequantization(x_q, s, z):
-
     # x_q - z might go outside the quantization range.
     x_q = x_q.int()
     x = s * (x_q - z)
@@ -32,7 +30,6 @@ def dequantization(x_q, s, z):
 
 
 def generate_quantization_constants(alpha, beta):
-
     # Affine quantization mapping
     s = (beta - alpha) / (beta_q - alpha_q)
     z = int((beta * alpha_q - alpha * beta_q) / (beta - alpha))
@@ -41,7 +38,6 @@ def generate_quantization_constants(alpha, beta):
 
 
 def generate_quantization_int8_constants(alpha, beta):
-
     b = 8
 
     s, z = generate_quantization_constants(alpha=alpha, beta=beta)
@@ -49,7 +45,6 @@ def generate_quantization_int8_constants(alpha, beta):
 
 
 def quantization_matrix_multiplication_int8(A_q, B_q, s_A, z_A, s_B, z_B, s_Y, z_Y):
-
     p = B_q.shape[0]
 
     # Y_q_simulated is FP32
@@ -66,8 +61,25 @@ def quantization_matrix_multiplication_int8(A_q, B_q, s_A, z_A, s_B, z_B, s_Y, z
     return Y_q_simulated
 
 
-def main():
+def generate_matrices(n, alpha_a, beta_a, alpha_b, beta_b, dist_type="uniform"):
+    if dist_type == "uniform":
+        a = torch.rand(n, n) * (beta_a - alpha_a) + alpha_a
+        b = torch.rand(n, n) * (beta_b - alpha_b) + alpha_b
+    elif dist_type == "normal":
+        a = torch.randn(n, n) * beta_a + alpha_a
+        b = torch.randn(n, n) * beta_b + alpha_b
+    else:
+        raise ValueError("Invalid dist_type")
+    return a, b
 
+
+def get_range(x, coverage=0.99):
+    x_min = torch.quantile(x, 1 - coverage)
+    x_max = torch.quantile(x, coverage)
+    return x_min, x_max
+
+
+def main():
     # Set random seed for reproducibility
     random_seed = 0
     torch.random.manual_seed(random_seed)
@@ -81,7 +93,7 @@ def main():
     # X
     alpha_X = -1
     beta_X = 1
-    s_X, z_X = generate_quantization_int8_constants(alpha=30*alpha_X, beta=30*beta_X)
+    s_X, z_X = generate_quantization_int8_constants(alpha=30 * alpha_X, beta=30 * beta_X)
     X = torch.randn(m, p) * (beta_X - alpha_X) + alpha_X
     X_q = quantization_int8(x=X, s=s_X, z=z_X)
     X_q_dq = dequantization(x_q=X_q, s=s_X, z=z_X)
@@ -89,15 +101,15 @@ def main():
     # W
     alpha_W = -1
     beta_W = 1
-    s_W, z_W = generate_quantization_int8_constants(alpha=30*alpha_W, beta=30*beta_W)
-    W =  torch.randn(p, n) * (beta_W - alpha_W) + alpha_W
+    s_W, z_W = generate_quantization_int8_constants(alpha=30 * alpha_W, beta=30 * beta_W)
+    W = torch.randn(p, n) * (beta_W - alpha_W) + alpha_W
     W_q = quantization_int8(x=W, s=s_W, z=z_W)
     W_q_dq = dequantization(x_q=W_q, s=s_W, z=z_W)
 
     # Y
     alpha_Y = -1
     beta_Y = 1
-    s_Y, z_Y = generate_quantization_int8_constants(alpha=900*alpha_Y, beta=900*beta_Y)
+    s_Y, z_Y = generate_quantization_int8_constants(alpha=900 * alpha_Y, beta=900 * beta_Y)
     Y_expected = torch.matmul(X, W)
     Y_q_expected = quantization_int8(x=Y_expected, s=s_Y, z=z_Y)
 
@@ -137,5 +149,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
