@@ -1,0 +1,15 @@
+artifact_uri: file:///home/mathadoor/Documents/peft-study/mlruns/861657804693440464/564c1c70396a415ab07f6141016e5225/artifacts
+end_time: 1714224733821
+entry_point_name: ''
+experiment_id: '861657804693440464'
+lifecycle_stage: active
+run_id: 564c1c70396a415ab07f6141016e5225
+run_name: dist_type=normal, cover=0.95
+run_uuid: 564c1c70396a415ab07f6141016e5225
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1714224659591
+status: 3
+tags: []
+user_id: mathadoor

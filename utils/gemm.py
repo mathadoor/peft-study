@@ -50,7 +50,8 @@ def quantization_matrix_multiplication_int8(A_q, B_q, s_A, z_A, s_B, z_B, s_Y, z
     Y_q_simulated = torch.zeros(A_q.shape[0], B_q.shape[1], dtype=int32)
     # outer produce
 
-    Y_q_simulated += torch.einsum("ij,jk->jk", (A_q.to(int) - z_A), (B_q.to(int) - z_B))
+    for k in range(p):
+        Y_q_simulated += torch.einsum("i,j->ij", (A_q[:, k].to(int) - z_A), (B_q[k, :].to(int) - z_B))
 
     Y_q_simulated = s_A * s_B * Y_q_simulated / s_Y + z_Y
 
@@ -136,7 +137,7 @@ if __name__ == "__main__":
         mlflow.set_tracking_uri("http://127.0.0.1:8080")
 
     # Create a new experiment
-    experiment_name = "gemm_matrix_size"
+    experiment_name = "gemm_matrix_size_outer_product"
 
     exp = client.search_experiments(filter_string="name='{}'".format(experiment_name))
     if len(exp) == 0:
@@ -148,7 +149,8 @@ if __name__ == "__main__":
     for dist_type in ["uniform", "normal"]:
         for cover in [0.7, 0.9, 0.95, 0.99]:
             with mlflow.start_run(experiment_id=experiment_id, run_name=f"dist_type={dist_type}, cover={cover}") as run:
-                params = {"cover": 0.99, "dist_type": dist_type, "alpha_a": -1, "beta_a": 1, "alpha_b": -1, "beta_b": 1}
+                params = {"cover": cover, "dist_type": dist_type, "alpha_a": -1, "beta_a": 1, "alpha_b": -1, "beta_b": 1}
+                mlflow.log_params(params)
                 for n in [10, 100, 1000, 3000]:
                     params = experiment(n, alpha_a=-1, beta_a=1, alpha_b=-1, beta_b=1, cover=cover, random=0,
                                         dist_type=dist_type)
@@ -160,5 +162,7 @@ if __name__ == "__main__":
                     mlflow.log_metric("Expected Error", expected_error, step=n)
                     mlflow.log_metric("Simulated Error", simulated_error, step=n)
                     mlflow.log_metric("Ground Truth Error", ground_truth_error, step=n)
-
+                    print(f"Experiment completed for n={n}, dist_type={dist_type}, cover={cover} "
+                          f"Expected Error={expected_error}, Simulated Error={simulated_error}, "
+                          f"Ground Truth Error={ground_truth_error}")
             print(f"Experiment completed for dist_type={dist_type}, cover={cover}")
