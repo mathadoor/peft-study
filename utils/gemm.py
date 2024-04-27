@@ -1,141 +1,141 @@
 import torch
-from torch import float32, int8, float16, bfloat16, float8_e4m3fn as float8
+from torch import float32, int8, int16, int32
 
+bits = 8
+alpha_q, beta_q = -2**(bits-1), 2**(bits-1)-1
 
-def quantization(x, s, z, alpha_q, beta_q, target_dtype="float16") -> torch.Tensor:
-    if target_dtype == "float16":
-        x_q = (1 / s * x + z).to(float16)
-    elif target_dtype == "float8":
-        x_q = (1 / s * x + z).to(float8)
-    elif target_dtype == "bfloat":
-        x_q = (1 / s * x + z).to(bfloat16)
-    elif target_dtype == "int8":
-        # x_q = np.round(1 / s * x + z, decimals=0)
-        x_q = (1 / s * x + z).to(int8)
-    else:
-        raise ValueError("Unsupported target_dtype: {}".format(target_dtype))
+def quantization(x, s, z):
 
-    # x_q = torch.clamp(x_q, min=alpha_q, max=beta_q)
+    x_q = torch.round(1 / s * x + z)
+    x_q = torch.clamp(x_q, alpha_q, beta_q)
+    # x_q = np.round(1 / s * x + z, decimals=0)
+    # x_q = np.clip(x_q, a_min=alpha_q, a_max=beta_q)
+
     return x_q
 
 
-# def quantization_int8(x, s, z):
-#     x_q = quantization(x, s, z, alpha_q=-128, beta_q=127)
-#     x_q = x_q.int8()
-#
-#     return x_q
+def quantization_int8(x, s, z):
+
+    x_q = quantization(x, s, z)
+    x_q = x_q.to(int8)
+    return x_q
 
 
 def dequantization(x_q, s, z):
+
     # x_q - z might go outside the quantization range.
-    x_q = x_q.to(float32)
+    x_q = x_q.int()
     x = s * (x_q - z)
+    x = x.to(float32)
 
     return x
 
 
-def generate_quantization_constants(alpha, beta, alpha_q, beta_q):
+def generate_quantization_constants(alpha, beta):
+
     # Affine quantization mapping
     s = (beta - alpha) / (beta_q - alpha_q)
-    z = (beta * alpha_q - alpha * beta_q) / (beta - alpha)
+    z = int((beta * alpha_q - alpha * beta_q) / (beta - alpha))
 
     return s, z
 
 
 def generate_quantization_int8_constants(alpha, beta):
+
     b = 8
-    alpha_q = -2 ** (b - 1)
-    beta_q = 2 ** (b - 1) - 1
 
-    s, z = generate_quantization_constants(alpha=alpha,
-                                           beta=beta,
-                                           alpha_q=alpha_q,
-                                           beta_q=beta_q)
-
+    s, z = generate_quantization_constants(alpha=alpha, beta=beta)
     return s, z
 
 
-def quantization_matrix_multiplication(a_q, b_q, s, z, q_type="float16"):
-    """
-    Matrix multiplication with quantization. Takes the following inputs:
-    :param a_q: quantized matrix A
-    :param b_q: quantized matrix B
-    :param s: list of s of the matrices
-    :param z: list of z of the matrices
-    :param q_type: quantization type
-    :return: Y: matrix Y
-    """
-    n = a_q.shape[0]
-    sa, sb = s
-    za, zb = z
-    Y = torch.zeros(n, n)
-    accum_a = torch.zeros(n)
-    accum_b = torch.zeros(n)
-    for j in range(n):
-        accum_a[j] = a_q[:, j].sum().to(float32)
-        accum_b[j] = b_q[:, j].sum().to(float32)
+def quantization_matrix_multiplication_int8(A_q, B_q, s_A, z_A, s_B, z_B, s_Y, z_Y):
 
-    for i in range(n):
-        for j in range(n):
-            Y[i, j] = (a_q[i, :] @ b_q[:, j]).sum().to(float32)
-            Y[i, j] -= accum_a[j] * zb[0]
-            Y[i, j] -= accum_b[j] * za[0]
-            Y[i, j] += (n * za[0] * zb[0]).to(float32)
+    p = B_q.shape[0]
 
-    # Y = a_q @ b_q - zb * a_q.sum(dim=0) - za * b_q.sum(dim=0) + n * za * zb
+    # Y_q_simulated is FP32
+    Y_q_simulated = torch.zeros(A_q.shape[0], B_q.shape[1], dtype=int32)
+    # outer produce
+    for k in range(p):
+        Y_q_simulated += torch.einsum("i,j->ij", (A_q[:, k].to(int) - z_A), (B_q[k, :].to(int) - z_B))
 
-    Y = sa * sb * Y
-    return Y.to(float32)
+    Y_q_simulated = s_A * s_B * Y_q_simulated / s_Y + z_Y
+
+    Y_q_simulated = torch.round(Y_q_simulated)
+    Y_q_simulated = torch.clamp(Y_q_simulated, min=alpha_q, max=beta_q)
+    Y_q_simulated = Y_q_simulated.to(int8)
+    return Y_q_simulated
 
 
 def main():
+
     # Set random seed for reproducibility
     random_seed = 0
+    torch.random.manual_seed(random_seed)
+
+    # Random matrices
+
+    m = 100
+    p = 100
     n = 100
-    torch.manual_seed(random_seed)
-    q_type = "int8"
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    max_alpha = 1
-    max_diff = 1
+    # X
+    alpha_X = -1
+    beta_X = 1
+    s_X, z_X = generate_quantization_int8_constants(alpha=30*alpha_X, beta=30*beta_X)
+    X = torch.randn(m, p) * (beta_X - alpha_X) + alpha_X
+    X_q = quantization_int8(x=X, s=s_X, z=z_X)
+    X_q_dq = dequantization(x_q=X_q, s=s_X, z=z_X)
 
-    alpha_q, beta_q = 127, -127
-    max_diff_q = -127
+    # W
+    alpha_W = -1
+    beta_W = 1
+    s_W, z_W = generate_quantization_int8_constants(alpha=30*alpha_W, beta=30*beta_W)
+    W =  torch.randn(p, n) * (beta_W - alpha_W) + alpha_W
+    W_q = quantization_int8(x=W, s=s_W, z=z_W)
+    W_q_dq = dequantization(x_q=W_q, s=s_W, z=z_W)
 
-    alpha = (torch.rand(2, 1) * 2 - 1) * max_alpha
-    beta = torch.clamp(alpha + (torch.rand(2, 1) - 1) * max_diff, -max_alpha * torch.ones(2, 1), alpha)
+    # Y
+    alpha_Y = -1
+    beta_Y = 1
+    s_Y, z_Y = generate_quantization_int8_constants(alpha=900*alpha_Y, beta=900*beta_Y)
+    Y_expected = torch.matmul(X, W)
+    Y_q_expected = quantization_int8(x=Y_expected, s=s_Y, z=z_Y)
 
+    Y_expected_prime = torch.matmul(X_q_dq, W_q_dq)
+    Y_expected_prime_q = quantization_int8(x=Y_expected_prime, s=s_Y, z=z_Y)
+    Y_expected_prime_q_dq = dequantization(x_q=Y_expected_prime_q,
+                                           s=s_Y,
+                                           z=z_Y)
 
-    print("alpha: ", alpha)
-    print("beta: ", beta)
-    print("alpha_q: ", alpha_q)
-    print("beta_q: ", beta_q)
+    print("Expected FP32 Y:")
+    print(Y_expected)
+    print("Expected FP32 Y Quantized:")
+    print(Y_q_expected)
 
-    s, z = generate_quantization_constants(alpha, beta, alpha_q, beta_q)
-    print("s: ", s)
-    print("z: ", z)
+    Y_q_simulated = quantization_matrix_multiplication_int8(A_q=X_q,
+                                                            B_q=W_q,
+                                                            s_A=s_X,
+                                                            z_A=z_X,
+                                                            s_B=s_W,
+                                                            z_B=z_W,
+                                                            s_Y=s_Y,
+                                                            z_Y=z_Y)
+    Y_simulated = dequantization(x_q=Y_q_simulated, s=s_Y, z=z_Y)
 
-    a = torch.rand(n, n) * 2 * alpha[0] - beta[0]
-    b = torch.rand(n, n) * 2 * alpha[1] - beta[1]
+    print("Expected Quantized Y_q from Quantized Matrix Multiplication:")
+    print(Y_q_simulated)
+    print(
+        "Expected Quantized Y_q from Quantized Matrix Multiplication Dequantized:"
+    )
+    print(Y_simulated)
 
-    a_q = quantization(a, s[0], z[0], alpha_q, beta_q, target_dtype=q_type)
-    b_q = quantization(b, s[1], z[1], alpha_q, beta_q, target_dtype=q_type)
-
-    print("a: ", a)
-    print("a_q: ", a_q)
-
-    print("b: ", b)
-    print("b_q: ", b_q)
-
-    Y_q = quantization_matrix_multiplication(a_q, b_q, s, z, q_type)
-    Y = a @ b
-    print("Y_q: ", Y_q)
-    print("Y:", Y)
-
-    error = torch.mean((Y_q - Y) ** 2)
-    print("error: ", error)
+    # Ensure the algorithm implementation is correct
+    rtol = 1e-5
+    assert torch.isclose(Y_simulated, Y_expected_prime_q_dq, rtol=rtol).all()
+    assert torch.isclose(Y_q_simulated, Y_expected_prime_q, rtol=rtol).all()
+    # assert (np.array_equal(Y_q_simulated, Y_expected_prime_q))
 
 
 if __name__ == "__main__":
+
     main()
-    print("Done!")

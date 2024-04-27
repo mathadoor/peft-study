@@ -31,8 +31,8 @@ understand how to quantize the model. In the next section, we will discuss vario
 Let us first understand how quantization is applied to a model. The process can be seen as that of finding a linear mapping 
 from a larger set of discrete numbers to a smaller set. These numbers correspond to the weights or activations in some 
 part of the model. Suppose the source set of numbers lie in the range $x \in [a, b]$ and the target set of numbers lie in the
-range $x_q \in [c, d]$. The linear mapping is $x = \alpha (x_q - \beta$). Here, $\alpha$ is the scale factor and $\beta$ is the
-zero point. 
+range $x_q \in [c, d]$. The linear mapping is $x = s \times (x_q - z)$. Here, $s$ is the scale factor and $z$ is the
+zero point. Both $x_q$ and $z$ are integers. Thus, the quantized number is $x_q = \upper(\frac{x}{s}) + z$. The scale factor and
 
 Now, let us see how we can categorize quantization methods. The first way is to categorize them based on the
 data type of the target number. The target number can be either an integer or a floating point number. In addition, we 
@@ -52,10 +52,10 @@ discuss the effect of quantization on computation.
 ## Experimental Setup
 ### Matrix Multiplication
 The first experiment is to understand the effect of quantization on matrix multiplication. The matrix multiplication is 
-done using the PyTorch library. Both the accuracy and the time taken to multiply two matrices are recorded for different
-quantization levels. We consider float32 as the base. The quantization levels are FP16, FP8, bfloat16, int8, and int4. The
-accumulation data type is kept as float32. The matrix sizes are varied from 10 x 10, 100 x 100, 1000 x 1000, 10000 x 10000.
-Each matrix is sampled from a normal distribution with mean 0 and standard deviation 1.
+done using the PyTorch library. Both the accuracy and the time taken to multiply two matrices are recorded. We consider 
+float32 as the base and int8 as the target quantization. The accumulation data type is kept as float32. The matrix sizes 
+are varied from 10 x 10, 100 x 100, 1000 x 1000, 10000 x 10000. Each matrix is sampled from a normal distribution with 
+mean 0 and standard deviation 1.
 
 Now let us see how quantized matrix multiplication works. Suppose we want to perform the operation $Y = A \times B$. Here,
 $Y \in \mathbb{R}^{m \times n}$, $A \in \mathbb{R}^{m \times k}$, and $B \in \mathbb{R}^{k \times n}$. Each element in 
