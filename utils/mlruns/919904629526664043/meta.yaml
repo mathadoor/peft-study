@@ -1,0 +1,6 @@
+artifact_location: file:///home/mathadoor/Documents/peft-study/utils/mlruns/919904629526664043
+creation_time: 1714219955280
+experiment_id: '919904629526664043'
+last_update_time: 1714219955280
+lifecycle_stage: active
+name: gemm

@@ -1,0 +1,15 @@
+artifact_uri: file:///home/mathadoor/Documents/peft-study/utils/mlruns/623150611299638304/240026b0b65746f7ab8f7172501d987c/artifacts
+end_time: 1714220515760
+entry_point_name: ''
+experiment_id: '623150611299638304'
+lifecycle_stage: active
+run_id: 240026b0b65746f7ab8f7172501d987c
+run_name: honorable-fawn-483
+run_uuid: 240026b0b65746f7ab8f7172501d987c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1714220515753
+status: 4
+tags: []
+user_id: mathadoor
