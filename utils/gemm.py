@@ -159,6 +159,12 @@ if __name__ == "__main__":
                     ground_truth_error = params["Ground Truth Error"]
 
                     # Log the results
+                    mlflow.log_metric("s_A", params["s_A"], step=n)
+                    mlflow.log_metric("z_A", params["z_A"], step=n)
+                    mlflow.log_metric("s_B", params["s_B"], step=n)
+                    mlflow.log_metric("z_B", params["z_B"], step=n)
+                    mlflow.log_metric("s_Y", params["s_Y"], step=n)
+                    mlflow.log_metric("z_Y", params["z_Y"], step=n)
                     mlflow.log_metric("Expected Error", expected_error, step=n)
                     mlflow.log_metric("Simulated Error", simulated_error, step=n)
                     mlflow.log_metric("Ground Truth Error", ground_truth_error, step=n)
