@@ -1,0 +1,15 @@
+artifact_uri: file:///home/mathadoor/Documents/peft-study/Experiments/mlruns/0/db68ac8f67934ee8a33dc2332807a8f4/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: db68ac8f67934ee8a33dc2332807a8f4
+run_name: llama3-lora-ft
+run_uuid: db68ac8f67934ee8a33dc2332807a8f4
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1714422497056
+status: 1
+tags: []
+user_id: mathadoor

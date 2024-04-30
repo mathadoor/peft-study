@@ -131,10 +131,10 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
+.env/
 venv/
 venv/*
-ENV/
+.env/
 env.bak/
 venv.bak/
 
@@ -172,3 +172,4 @@ cython_debug/
 /utils/data/
 /data/
 /mlruns/.trash/
+/.env
