@@ -1,0 +1,12 @@
+name: roberta-base
+model:
+  model_name: roberta-base
+  tokenizer_name: roberta-base
+  max_length: 512
+  train:
+    batch_size: 8
+    lr: 3e-5
+    epochs: 3
+    warmup_steps: 0
+    weight_decay: 0.01
+    max_grad_norm: 1.0

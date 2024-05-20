@@ -9,3 +9,4 @@ omegaconf==2.3.0
 requests==2.31.0
 bitarray==2.9.2
 Cython==3.0.10
+torchdata==0.7.1
