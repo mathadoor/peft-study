@@ -1,34 +1,9 @@
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
-from torch.utils.data import DataLoader
-from torch.optim import AdamW
 import torch
 import mlflow
-from mlflow.models import infer_signature
 from tqdm import tqdm
-
-
-class AverageMeter:
-    """
-    Computes and stores the average and current value
-    """
-
-    def __init__(self):
-        self.accumulator = 0
-        self.n = 0
-
-    def update(self, value, nums):
-        self.accumulator += value
-        self.n += nums
-
-    def average(self):
-        ret = self.accumulator / self.n
-        self.reset()
-        return ret
-
-    def reset(self):
-        self.accumulator = 0
-        self.n = 0
+from metrics import AverageMeter
 
 
 class SimpleCNN(torch.nn.Module):
