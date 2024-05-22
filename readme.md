@@ -1,74 +1,47 @@
-## Objective
-The purpose of this document is to present a report on the pros and cons of quantization. In lieu of that, I will 
-specifically target the definition, and applicability of this technique. The first section will deal with defining what 
-quantization and its various forms. The next section briefly talks about where it can be applied. The following section 
-will discuss the experimental setup and finally, the last section will discuss the results. 
+## Introduction
+Fine-tuning Large Language Model (LLM) is a necessary endeavor that an ML practitionar must undertake to tune the model 
+parameters on their data for a performance sensitive applications. However, the compute requirements to fine-tune are 
+prohibitively expensive. The compute budget must account for both the model weights as well as the gradient updates 
+during tuning. Parameter efficient fine-tuning techniques address one or both of these concerns by freezing and/or 
+[[Quantization|quantizing]] the model parameters. It further introduces parameters for learning the new concept in a 
+smaller subspace than the original parameter space. Out of these PEFTs, Low Rank Adaptation based methods have enjoyed 
+popularity in recent years. This document concerns itself with the application of LoRA.
 
-## Definitions
-The idea of quantization is to project a higher precision floating point number to a lower precision one. The target
-data type can be either an integer or a floating point number. Before we delve into the specifics, let's first 
-understand how a floating point number is represented. 
+The methods are compared in this study with the zero-shot performance and full parameter fine tuning wherever 
+applicable. The training time, inference speed, and memory requirements are used to perform the comparison. I will only 
+study RoBERTa and finetune it to the task of SQuAD for now to limit the scope of this test. In the next section, I will 
+discuss the mathematical formulation of LoRA in detail. The following section will discuss the experiments performed. 
+Finally, the results and discussion section is presented. 
 
-A float number of 32 bit precision is represented by splitting the bits into three parts: sign bit, exponent, and 
-mantissa. The sign bit is 1 bit that indicates whether the number is positive or negative. The exponent is 8 bits that 
-represent the power of 2 with a bias. The mantissa is the remaining 23 bits that represent the fractional part of the 
-number. Now, let us say we want to represent the number 0.375 in 32 bit precision. First, we convert the number to binary.
-$ 0.375 = 2^{-2} + 2^{-3} = 0.011 $ in binary. The next step is to normalize the number. We shift the binary point to the
-left until the first bit is 1. $ 0.011 = 1.1 \times 2^{-2} $. The sign bit is 0. The exponent is -2, but we add a bias
-to account for the negative exponents. The bias is 127, so the exponent is 125. The mantissa is 11000000000000000000000.
-Therefore, the 64 bit binary representation of 0.375 is [0][01111101][10000000000000000000000]. 
+## Low Rank Adaptation
+Neural networks composes a series of linear transformation of the input with intermediate non-linear activations. 
+Typically, rectified linear function is used for activation. When adapting a pre-trained network to some dataset, all 
+of the models are fine-tuned. Since the weights of the network are adjusted using the loss function gradient, an 
+additional memory must be reserved to store these updates before applying. 
 
-Notice the number of mantissa bits represent the precision of the number, while the exponent bits are needed to represent 
-a wide range of numbers. Thus by reducing the number of bits in the representation, we can reduce the memory footprint 
-of storing the number. This has a downstream effect on the computational cost of operations. As such, quantization is
-a technique used to reduce the memory footprint as well as the computational cost of operations. This can be utilized in 
-deep learning models to load bigger models on smaller devices while also speeding up the computation. However, there are 
-a few concerns that need to be addressed before we can use quantization. First, we need to quantify the extent of 
-gain in memory and speed. Second, we need to understand how the model accuracy is affected. Finally, we need to 
-understand how to quantize the model. In the next section, we will discuss various forms of quantization techniques.
+The idea behind low rank adaptation is to freeze the original network parameters and add a product of two matrices to 
+each linear transformation. These newly introduced matrices have a much smaller inner dimension as a result of which 
+the compute requirements for training are reduced dramatically. Suppose, $P_f$ represents the frozen parameters of some 
+linear layer and the newly introduced low-rank matrices are $A$ and $B$. Then, the parameters of the model to be adapted 
+are computed as $P_{new} = P_f + AB$. Here, the internal dimension of $A$ and $B$ are specified with a hyperparameter 
+$r$, which is also used to signify the rank of these matrices. 
 
-## Forms of Quantization
-Let us first understand how quantization is applied to a model. The process can be seen as that of finding a linear mapping 
-from a larger set of discrete numbers to a smaller set. These numbers correspond to the weights or activations in some 
-part of the model. Suppose the source set of numbers lie in the range $x \in [a, b]$ and the target set of numbers lie in the
-range $x_q \in [c, d]$. The linear mapping is $x = s \times (x_q - z)$. Here, $s$ is the scale factor and $z$ is the
-zero point. Both $x_q$ and $z$ are integers. Thus, the quantized number is $x_q = \upper(\frac{x}{s}) + z$. The scale factor and
+Training the matrices $A$ and $B$ requires the network to be trained is the same as the original network in the 
+beginning. This can be achieved by setting either $A$, $B$ or both to be 0. I will investigate all of these scenarios. 
+Following this, comes rank selection. I will try two settings one in which the rank is computed based on the rank of the 
+original matrix and the second in which the rank is specified as a hyperparameter. The next section will describe 
+different settings I intend to test. 
 
-Now, let us see how we can categorize quantization methods. The first way is to categorize them based on the
-data type of the target number. The target number can be either an integer or a floating point number. In addition, we 
-also consider the accumulation data type. The accumulation data type is the data type used to store the intermediate 
-results of the computation. The second way to categorize quantization techniques is based on the granularity of the
-quantization. The granularity can be at the level of the tensor, layer, or model itself. 
+## Experimentation
+I discovered a few avenues for exploration in the previous section that answer how LoRA based tuning is affected by 
+network initialization and rank selection. But first, the benchmark against which to compare the performance must be 
+selected. Since the need for parameter efficient tuning is realized much strongly in Large Language Models, we will 
+focus on language tasks. As mentioned previously, it is important to note the power of these models across different 
+sizes. As such, we will consider BERT as our smaller model and gradually increase model complexity to LLAMA-8B. 
+Specifically, we will consider the base, and large for initial benchmarking. For now, I am going to start with SQUAD.
 
-The third way is to categorize based on whether the quantization is done post training or during training. Within post
-training quantization, we can further categorize based on whether the quantization is done statically or dynamically. 
-Static quantization is when the scale factor and zero point are calculated once and used throughout the inference process.
-A calibration dataset is needed to estimate the appropriate quantization parameters. Dynamic quantization is when the 
-quantization parameters are calculated on the fly. This is useful when the input data distribution changes during inference.
-Finally, during training quantization is when the quantization is done during the training process itself. The model is 
-quantized during training so that the optimizer can adjust the weights to account for the quantization error. Next, we will
-discuss the effect of quantization on computation.
+As noted earlier, I will consider four settings - random initialization for both matrices, 0 initialization for one of 
+them and then for both of them. Along side, I will also consider different ranks. First, I should look at the rank of 
+each parameter matrix. 
 
-## Experimental Setup
-### Matrix Multiplication
-The first experiment is to understand the effect of quantization on matrix multiplication. The matrix multiplication is 
-done using the PyTorch library. Both the accuracy and the time taken to multiply two matrices are recorded. We consider 
-float32 as the base and int8 as the target quantization. The accumulation data type is kept as float32. The matrix sizes 
-are varied from 10 x 10, 100 x 100, 1000 x 1000, 10000 x 10000. Each matrix is sampled from a normal distribution with 
-mean 0 and standard deviation 1.
-
-Now let us see how quantized matrix multiplication works. Suppose we want to perform the operation $Y = A \times B$. Here,
-$Y \in \mathbb{R}^{m \times n}$, $A \in \mathbb{R}^{m \times k}$, and $B \in \mathbb{R}^{k \times n}$. Each element in 
-Y is computed as follows: $y_{ij} = \sum_{l=1} a_{il} \times b_{lj}$. As such, we will need to do k floating point 
-multiplications and additions to compute each element in Y. Thus, we will need to perform $m \times n \times k$ floating
-point multiplications and additions to compute the entire matrix Y. We know that floating point operations are expensive.
-Thus, we can reduce the cost of computation by quantizing the matrices A and B. Let us see how this is done.
-
-Let's replace each element in the equation by its quantized value.  
-$y_{ij} = \sum_{l=1} \alpha_a (a_{q, il} - \beta_a) \times \alpha_b (b_{q, lj} - \beta_b) $.  
-$y_{ij} = \alpha_a \alpha_b \sum_{l=1} (a_{q, il} - \beta_a) \times (b_{q, lj} - \beta_b) $.  
-$y_{ij} = \alpha_a \alpha_b (\sum_{l=1} a_{q, il} \times b_{q, lj} - \beta_a \sum_{l=1} b_{q, lj} - \beta_b \sum_{l=1} a_{q, il} + k * \beta_a \beta_b) $.  
-Now, let us substitute the expression for the $y_{ij}$ in terms of quantized values.  
-$y_{q, ij} = \frac{\beta_y}{\alpha_y} + \frac{\alpha_a \alpha_b}{\alpha_y} (y_{q, ij} - \beta_a \sum_{l=1} b_{q, lj} - \beta_b \sum_{l=1} a_{q, il} + k * \beta_a \beta_b) $.  
-### Linear Regression
-### Language Modeling Tasks
+## Results
