@@ -1,0 +1,6 @@
+artifact_location: file:///home/mathador/Documents/Projects/peft-study/Experiments/mlruns/174981238269013955
+creation_time: 1716510205791
+experiment_id: '174981238269013955'
+last_update_time: 1716510205791
+lifecycle_stage: active
+name: roberta-base-squad
