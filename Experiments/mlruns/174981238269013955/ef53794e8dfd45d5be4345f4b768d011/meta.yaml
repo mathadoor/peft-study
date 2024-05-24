@@ -1,0 +1,15 @@
+artifact_uri: file:///home/mathador/Documents/Projects/peft-study/Experiments/mlruns/174981238269013955/ef53794e8dfd45d5be4345f4b768d011/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '174981238269013955'
+lifecycle_stage: active
+run_id: ef53794e8dfd45d5be4345f4b768d011
+run_name: roberta-base-squad
+run_uuid: ef53794e8dfd45d5be4345f4b768d011
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1716516317751
+status: 1
+tags: []
+user_id: mathador
