@@ -1,8 +1,9 @@
 artifact_uri: mlflow-artifacts:/914599251833420896/011e9a5d4dce40b79da635f1dedd7be0/artifacts
+deleted_time: 1716900138938
 end_time: 1716554270020
 entry_point_name: ''
 experiment_id: '914599251833420896'
-lifecycle_stage: active
+lifecycle_stage: deleted
 run_id: 011e9a5d4dce40b79da635f1dedd7be0
 run_name: roberta-base-squad
 run_uuid: 011e9a5d4dce40b79da635f1dedd7be0
