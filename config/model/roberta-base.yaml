@@ -3,6 +3,7 @@ model:
   model_name: roberta-base
   tokenizer_name: roberta-base
   max_length: 512
+  device: cuda
   train:
     batch_size: 8
     lr: 3e-5
