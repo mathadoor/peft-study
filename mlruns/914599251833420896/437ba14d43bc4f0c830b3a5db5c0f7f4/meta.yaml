@@ -1,0 +1,16 @@
+artifact_uri: mlflow-artifacts:/914599251833420896/437ba14d43bc4f0c830b3a5db5c0f7f4/artifacts
+deleted_time: 1716945175604
+end_time: 1716944554888
+entry_point_name: ''
+experiment_id: '914599251833420896'
+lifecycle_stage: deleted
+run_id: 437ba14d43bc4f0c830b3a5db5c0f7f4
+run_name: roberta-base-squad
+run_uuid: 437ba14d43bc4f0c830b3a5db5c0f7f4
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1716944543610
+status: 4
+tags: []
+user_id: mathadoor
