@@ -37,11 +37,23 @@ I discovered a few avenues for exploration in the previous section that answer h
 network initialization and rank selection. But first, the benchmark against which to compare the performance must be 
 selected. Since the need for parameter efficient tuning is realized much strongly in Large Language Models, we will 
 focus on language tasks. As mentioned previously, it is important to note the power of these models across different 
-sizes. As such, we will consider BERT as our smaller model and gradually increase model complexity to LLAMA-8B. 
-Specifically, we will consider the base, and large for initial benchmarking. For now, I am going to start with SQUAD.
+sizes. As such, we will consider RoBERTa as our smaller model and increase model complexity further. Specifically, we 
+will consider the base, and large for initial benchmarking. For now, I am going to start with SQUAD.
 
 As noted earlier, I will consider four settings - random initialization for both matrices, 0 initialization for one of 
-them and then for both of them. Along side, I will also consider different ranks. First, I should look at the rank of 
+them and then for both of them. Alongside, I will also consider different ranks. First, I should look at the rank of 
 each parameter matrix. 
+
+The first experiment deals with the rank to be considered. An exploratory study is conducted to determine an appropriate
+rank. It is a fair argument to consider the expressivity of the model to be proportional to the rank of the linear 
+transformations. To this end, I will consider the rank of the original matrix as a starting point. The rank here is 
+computed based on the explained variance instead of the exact rank. First, each parameter matrix $A_p$ is decomposed 
+using singular value decomposition:
+$A_p = U \Sigma V^T$
+
+I considered several thresholds for the explained
+variance and computed the rank of the matrix. To compute the explained variance, I used the singular value decomposition
+of the matrix. The rank is computed as the ratio of the sum of the squared singular values to the total sum of the
+squared singular values. The rank is then computed as the number of singular values that contribute to the threshold. 
 
 ## Results
