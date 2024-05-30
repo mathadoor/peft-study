@@ -5,9 +5,9 @@ model:
   max_length: 512
   device: cuda
   train:
-    batch_size: 8
-    lr: 3e-5
-    epochs: 3
+    batch_size: 16 
+    lr: 1e-3
+    epochs: 10 
     warmup_steps: 0
-    weight_decay: 0.01
+    weight_decay: 0.0001
     max_grad_norm: 1.0
