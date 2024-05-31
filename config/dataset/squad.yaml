@@ -1,2 +1,4 @@
 name: squad
+load_from_disk: True 
+save_to_disk: True
 
