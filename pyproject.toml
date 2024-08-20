@@ -15,10 +15,11 @@ torchvision = "0.18.0"
 sacrebleu = "2.4.2"
 hydra-core = "1.3.2"
 omegaconf = "2.3.0"
-requests = "2.31.0"
 bitarray = "2.9.2"
 cython = "3.0.10"
 torchdata = "0.7.1"
+transformers = "^4.44.1"
+datasets = "^2.21.0"
 
 
 [build-system]
